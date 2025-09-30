@@ -1,0 +1,37 @@
+#Add this on the end of /.docker/mcp/catalogs/docker-mcp.yaml
+  moonraker:
+    description: "Control Creality K1 Max 3D printers via Moonraker API"
+    title: "Moonraker Printer Control"
+    type: server
+    dateAdded: "2025-01-28T00:00:00Z"
+    image: mcp/moonraker:latest
+    ref: ""
+    readme: ""
+    toolsUrl: ""
+    source: ""
+    upstream: ""
+    icon: ""
+    tools:
+      - name: set_purge_line
+      - name: get_printer_status
+      - name: list_files
+      - name: start_print
+      - name: start_print_with_leveling
+      - name: pause_print
+      - name: resume_print
+      - name: stop_print
+      - name: control_light
+    secrets:
+      - name: PRINTER_URL
+        env: PRINTER_URL
+        example: http://192.168.1.12:4409
+      - name: API_KEY
+        env: API_KEY
+        example: your-api-key
+    metadata:
+      category: automation
+      tags:
+        - 3d-printing
+        - moonraker
+      license: MIT
+      owner: local
