@@ -1,217 +1,344 @@
-# 🖨️ Autonomous 3D Printer Control System
-## Creality K1 Max + Moonraker + AI Agent + Auto-Ejection
+Moonraker MCP Server + n8n Queue for Creality K1 Max
 
-### ⚠️ BETA VERSION - USE AT YOUR OWN RISK
+Semi-automated printing pipeline for Creality K1 Max using:
 
----
+a custom MCP (Model Context Protocol) server for Moonraker,
 
-## 📋 Overview
+n8n orchestration (CRON + Telegram trigger),
 
-This project creates a fully autonomous 3D printing system that combines:
-- **Creality K1 Max** 3D printer with Moonraker/Klipper firmware
-- **AI Agent** (Claude/GPT) for intelligent print management
-- **Google Sheets** for print queue management
-- **n8n** workflow automation platform
-- **Telegram** bot for remote control
-- **MCP (Model Context Protocol)** for AI-printer communication
-- **Automatic print ejection** system for continuous printing
+Google Sheets as the print queue,
 
-The system can automatically process a queue of print jobs, handle bed leveling decisions, manage purge lines, and physically eject completed prints from the build plate.
+Klipper/KAMP modifications (custom purge + automatic print ejection).
 
-## 🎥 Demo Video
+⚠️ Beta software/hardware integration. Use at your own risk.
+⚠️ Mechanical limitation: auto-eject does not work reliably for very low-height prints and requires ~80 mm of free build plate at the rear.
 
-[YouTube Video Placeholder - Link to be added]
+Table of Contents
 
-## 🔧 What I Used
+Overview
 
-### Hardware:
-- Creality K1 Max 3D printer
-- Modified toolhead cover for better print ejection ([Model Link](https://makerworld.com/en/models/816811-creality-k1-toolhead-cover-k1-burner-v2))
+System Architecture
 
-### Software Stack:
-- **Moonraker** - Web API for Klipper
-- **KAMP** (Klipper Adaptive Meshing & Purging)
-- **Docker** with MCP Toolkit
-- **n8n** (self-hosted via Docker)
-- **Claude Desktop** with MCP integration
-- **Telegram Bot API**
-- **Google Sheets API**
-- **Cloudflare Zero Trust** (for secure n8n access)
+Features
 
-### AI Models:
-- OpenRouter (GPT-5-mini or similar)
-- OpenAI Whisper (for voice commands)
+Components
 
-## 🚀 How It Works
+Requirements
 
-1. **Print Queue Management**: Google Sheets maintains a queue with priorities, quantities, and print settings
-2. **Automatic Scheduling**: n8n runs every 30 minutes to check if printer is ready
-3. **AI Decision Making**: Agent analyzes queue, selects next job based on priority
-4. **Smart Configuration**: Automatically handles bed leveling and purge line based on spreadsheet settings
-5. **Physical Ejection**: After print completes and bed cools to 39°C, printer automatically ejects the part
-6. **Remote Control**: Full control via Telegram bot with voice command support
+Installation & Setup
 
-## ⚙️ Complete Setup Guide
+1. Printer Preparation (Klipper/Moonraker/KAMP)
 
-### Prerequisites
+2. MCP Server (Docker build + secrets)
 
-- Creality K1 Max printer
-- Computer running Docker Desktop
-- n8n instance (local or cloud)
-- Google account (for Sheets)
-- Telegram account
-- API keys for AI services
+3. MCP Registry & Catalog
 
-### Step 1: Printer Preparation
+4. MCP Gateway (Claude Desktop / CLI)
 
-#### 1.1 Root the Printer and Install Moonraker
+5. n8n: CRON, Telegram & Google Sheets
 
-[Link to rooting guide - to be added]
+6. Cloudflare Zero Trust (optional)
 
-1. Root your Creality K1 Max
-2. Install Moonraker and Klipper
-3. Install KAMP (Klipper Adaptive Meshing & Purging)
+Klipper/KAMP Configuration (Purge & Auto-Eject)
 
-#### 1.2 Configure Printer Macros
+Usage
 
-Add to `gcode_macros.cfg`:
-```gcode
-[gcode_macro POST_PRINT_EJECT_SIMPLE_RUN]
-description: Fixed sweep path - no logic
-variable_bed_cooldown: 39
-gcode:
-  ; Wait for bed to cool
-  TEMPERATURE_WAIT SENSOR=heater_bed MAXIMUM={bed_cooldown}
-  ; Ejection movements
-  G90
-  M83
-  SET_VELOCITY_LIMIT ACCEL=500 ACCEL_TO_DECEL=250
-  ; [Full macro code as provided above...]
-Modify END_PRINT macro to include:
-gcodePOST_PRINT_EJECT_SIMPLE
-1.3 Configure KAMP Settings
-In config/Helper-Script/KAMP/Start_Print.cfg, add virtual pins:
-gcode[output_pin AUTO_EJECT]
-pin: virtual_pin:AUTO_EJECT_pin
-value: 0
+Troubleshooting
 
-[gcode_macro AUTO_EJECT_ON]
-description: Enable auto eject after print
-gcode:
-  SET_PIN PIN=AUTO_EJECT VALUE=1
-  RESPOND TYPE=command MSG="AUTO-EJECT enabled"
-Modify Line_Purge.cfg with custom purge sequence (see full code in repository).
-Note: If files are read-only, create copies with new names and update includes in KMAP_Settings.cfg
-1.4 Print Modified Toolhead Cover
-Print and install the modified toolhead cover for better print ejection.
-Step 2: MCP Server Setup
-[Link to MCP setup guide - to be added]
+Demo Video
 
-Build Docker image:
+Diagrams
 
-bashcd moonraker-mcp-server
-docker build -t moonraker-mcp-server .
-docker tag moonraker-mcp-server:latest mcp/moonraker:latest
+Links & Resources
 
-Set secrets:
+License
 
-bashdocker mcp secret set PRINTER_URL="http://YOUR_PRINTER_IP:4409"
-docker mcp secret set API_KEY="your-api-key"  # if needed
+Overview
 
-Configure Claude Desktop (~/Library/Application Support/Claude/claude_desktop_config.json)
+This project connects a Creality K1 Max running Klipper/Moonraker with an external orchestration layer:
 
-Step 3: n8n Setup
-Link to n8n installation guide - Network Chuck Tutorial
+MCP server exposes printer controls as structured tools.
 
-Install n8n locally with Docker
-Configure Cloudflare Zero Trust for secure access
-Import the workflow (Simple_printers_Autonomus.json)
-Configure credentials:
+n8n orchestrates automatic queue execution (CRON) and manual commands (Telegram).
 
-Telegram Bot API
-Google Sheets OAuth
-OpenRouter/OpenAI API
+Google Sheets stores print jobs (priority, quantities, leveling, purge line, etc.).
+
+Klipper/KAMP macros handle custom purge sequences and post-print ejection.
+
+System Architecture
+[Klipper + Moonraker (K1 Max)]
+          ↑ REST (Moonraker API)
+[Moonraker MCP Server (Docker)]
+          ↑ stdio/SSE
+[MCP Gateway]  ←→  [n8n Orchestration] ←→ [Google Sheets Queue]
+                           ↑
+                 (Telegram / Schedule Trigger)
+
+Features
+
+Printer control
+
+Status (READY/BUSY, temps, progress).
+
+List .gcode files.
+
+Start print:
+
+Fast: no leveling.
+
+Precise: with adaptive leveling (based on sheet or user command).
+
+Purge line on/off.
+
+Pause / resume / stop.
+
+Chamber light control.
+
+Queue management
+
+Google Sheets as source of truth.
+
+Auto-trigger via CRON in n8n.
+
+Priority + FIFO scheduling.
+
+Quantity tracking (qty_done vs qty_total).
+
+Klipper/KAMP integration
+
+Custom purge macro (replaces LINE_PURGE).
+
+Auto-eject macro to sweep prints off the bed.
+
+Components
+
+moonraker_server.py – MCP server (Python 3.11, FastMCP, httpx).
+
+Dockerfile – containerized build of the MCP server.
+
+requirements.txt – dependencies (mcp[cli], httpx).
+
+gcode_macros.cfg – custom macros for purge and eject.
+
+docker-mcp.yaml – catalog entry for MCP.
+
+registry.yaml – registry reference.
+
+custom.yaml – local overrides/extensions.
+
+n8n workflows – CRON, Telegram trigger, Google Sheets update.
+
+Requirements
+
+Creality K1 Max flashed with Klipper + Moonraker.
+
+KAMP macros installed.
+
+Docker.
+
+n8n (local or Docker).
+
+Google Sheets API.
+
+MCP Gateway (Claude Desktop or CLI).
+
+Cloudflare Zero Trust (optional, to expose n8n securely).
+
+Installation & Setup
+1. Printer Preparation (Klipper/Moonraker/KAMP)
+
+Flash Klipper/Moonraker on your K1 Max.
+
+Install KAMP macros.
+
+Add custom purge and auto-eject macros (see Klipper/KAMP Configuration
+).
+
+Verify API access:
+
+curl "http://PRINTER_IP:PORT/server/files/list"
+curl -X POST "http://PRINTER_IP:PORT/printer/gcode/script" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"G28"}'
+
+2. MCP Server (Docker build + secrets)
+cd /Users/youruser/moonraker-mcp-server
+docker build -t mcp/moonraker:latest .
 
 
-Adjust Schedule Trigger (recommended: 30 minutes to save API costs)
+Set secrets (printer URL and API key):
 
-Step 4: Google Sheets Setup
-Create spreadsheet with following structure:
-idfile_nameqty_totalqty_doneprioritystatusauto_ejectlevelingpurge_linenotes1test.gcode301waitingonoffon2part.gcode522DONEoffonoff
-Required columns: id, file_name, qty_total, qty_done, priority
-Optional columns: status, auto_eject, leveling, purge_line, notes
-Step 5: Run MCP Gateway
-For n8n to work, MCP Gateway must be running:
-bashdocker mcp gateway run --transport sse
-Or ensure Claude Desktop is running with MCP configured.
-🎮 Usage
-Automatic Mode (CRON)
+docker mcp secret set PRINTER_URL="http://192.168.1.12:4409"
+docker mcp secret set API_KEY="your-api-key"
 
-System checks printer every 30 minutes
-Selects highest priority job with qty_done < qty_total
-Configures leveling and purge based on spreadsheet
-Updates spreadsheet after successful start
+3. MCP Registry & Catalog
 
-Manual Control (Telegram)
+~/.docker/mcp/catalogs/docker-mcp.yaml:
 
-"Status" - check printer status
-"List files" - show available G-code files
-"Print test.gcode" - start specific print
-"Print with leveling part.gcode" - force bed leveling
-"Pause"/"Resume"/"Stop" - control active print
-Voice messages supported via Whisper API
+moonraker:
+  description: "Control Creality K1 Max 3D printers via Moonraker API"
+  title: "Moonraker Printer Control"
+  type: server
+  image: mcp/moonraker:latest
+  tools:
+    - name: get_printer_status
+    - name: list_files
+    - name: start_print
+    - name: start_print_with_leveling
+    - name: set_purge_line
+    - name: pause_print
+    - name: resume_print
+    - name: stop_print
+    - name: control_light
+  secrets:
+    - name: PRINTER_URL
+      env: PRINTER_URL
+    - name: API_KEY
+      env: API_KEY
 
-⚠️ Important Limitations
 
-Auto-ejection doesn't work for low objects (< ~20mm height)
-Requires ~80mm clearance at the back of build plate
-BETA VERSION - system may have bugs or cause damage
-USE AT YOUR OWN RISK - test thoroughly before production use
-Monitor first few prints to ensure ejection works properly
+~/.docker/mcp/registry.yaml:
 
-🔒 Security Considerations
+catalog:
+  - catalogs/docker-mcp.yaml
+  - catalogs/custom.yaml
+config: config.yaml
+tools: tools.yaml
+secrets: secrets.yaml
 
-API keys stored in Docker secrets
-Telegram bot restricted to authorized user IDs
-n8n secured with Cloudflare Zero Trust
-Printer network should be isolated/secure
+4. MCP Gateway (Claude Desktop / CLI)
 
-📊 Cost Estimation
+Claude Desktop config (macOS):
 
-OpenRouter API: ~$0.10-0.50 per day (depending on usage)
-Telegram: Free
-Google Sheets: Free
-n8n: Free (self-hosted)
+{
+  "mcpServers": {
+    "mcp-toolkit-gateway": {
+      "command": "docker",
+      "args": [
+        "run","-i","--rm",
+        "-v","/var/run/docker.sock:/var/run/docker.sock",
+        "-v","/Users/youruser/.docker/mcp:/mcp",
+        "docker/mcp-gateway",
+        "--catalog=/mcp/catalogs/docker-mcp.yaml",
+        "--catalog=/mcp/catalogs/custom.yaml",
+        "--config=/mcp/config.yaml",
+        "--registry=/mcp/registry.yaml",
+        "--tools-config=/mcp/tools.yaml",
+        "--transport=stdio"
+      ]
+    }
+  }
+}
 
-🐛 Troubleshooting
-Common Issues:
 
-"Request timed out" - Normal during printer heating, wait 30-60s
-Files not found - Ensure .gcode files are in printer's storage
-Ejection fails - Check bed temperature threshold and print height
-MCP not connecting - Verify Docker gateway is running
+CLI alternative:
 
-Debug Commands:
-bash# Check MCP server
-docker mcp server list
+docker mcp gateway run --transport sse
 
-# View logs
-docker logs $(docker ps -q --filter ancestor=mcp/moonraker:latest)
+5. n8n: CRON, Telegram & Google Sheets
 
-# Test printer connection
-curl http://YOUR_PRINTER_IP:4409/printer/info
-🤝 Contributing
-Feel free to submit issues and enhancement requests!
-📄 License
-MIT License - Use at your own risk
-🙏 Acknowledgments
+Install n8n locally.
 
-Network Chuck for n8n tutorial
-Moonraker/Klipper developers
-KAMP project contributors
-MCP toolkit team
+Add Schedule Trigger (CRON) and Telegram Trigger.
 
-📞 Contact
-[Your contact information]
+Connect to Google Sheets.
 
-Remember: This is an experimental system. Always supervise initial prints and have emergency stop procedures ready. The auto-ejection system can potentially damage prints or printer if not properly configured.
+Queue structure (sheet queue):
+
+id	file_name	qty_total	qty_done	priority	status	auto_eject	leveling	purge_line	notes
+1	0004.gcode	3	2	1	waiting	on	off	on	client #123
+2	0003.gcode	6	6	1	DONE	on	off	on	–
+
+CRON job picks first available row (qty_done < qty_total, not DONE/blocked).
+leveling=yes → start with leveling.
+purge_line=on → run purge before print.
+
+6. Cloudflare Zero Trust (optional)
+
+Expose n8n under your domain via Cloudflare Tunnel.
+
+Protect with authentication.
+
+Klipper/KAMP Configuration (Purge & Auto-Eject)
+
+The repo includes:
+
+LINEPURGE macro – nozzle cleaning sequence (custom moves, heating, extrusion, cooling).
+
+POST_PRINT_EJECT_SIMPLE macro – sweeps prints off bed after cooldown.
+
+END_PRINT macro modified to call auto-eject.
+
+If files are read-only, copy them under a new filename and update [include ...] in KAMP_Settings.cfg.
+
+Usage
+
+Auto (CRON):
+
+Check printer status.
+
+Read queue from Google Sheets.
+
+Verify .gcode exists.
+
+Apply purge_line / leveling settings.
+
+Start print.
+
+Increment qty_done.
+
+Manual (Telegram):
+
+status → printer status.
+
+files → list files.
+
+print <file> → start without leveling.
+
+print leveling <file> → start with leveling.
+
+pause, resume, stop, light on/off.
+
+Troubleshooting
+
+Gateway ignores custom.yaml → check registry.yaml includes both catalogs.
+
+File missing on printer → run list_files() and check filename matches sheet.
+
+Temperature wait errors → use MINIMUM/MAXIMUM instead of TARGET.
+
+Collisions on eject → disable with AUTOEJECT_OFF.
+
+Fan control → ensure fan0 defined as output_pin with scale=255.
+
+Demo Video
+
+📹 [PLACEHOLDER – YouTube demo link]
+
+Diagrams
+Full System
+
+[PLACEHOLDER – system architecture diagram image]
+
+n8n Workflow
+
+[PLACEHOLDER – screenshot of n8n flow with triggers, sheets, and MCP client]
+
+Links & Resources
+
+Moonraker
+
+Klipper
+
+KAMP macros
+
+MakerWorld – K1 Toolhead Cover (improved part ejection)
+
+n8n official docs
+
+Cloudflare Zero Trust
+
+License
+
+MIT License (unless otherwise stated in source files).
+External components retain their respective licenses.
