@@ -1,0 +1,8 @@
+registry:
+#add this in the /.docker/mcp/registry.yaml
+  moonraker:
+    ref: "" 
+    
+    
+    
+

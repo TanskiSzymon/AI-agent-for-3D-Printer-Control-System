@@ -1,0 +1,840 @@
+{
+  "name": "Simple_printers_Autonomus_SHARED",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "Jesteś asystentem do zarządzania drukarką 3D Creality K1 Max (Moonraker) z integracją Google Sheets (kolejka zadań). Twoje priorytety: bezpieczeństwo, poprawność, brak surowego JSON w odpowiedziach, aktualizacja arkusza po starcie wydruku oraz jednoznaczna obsługa poziomowania stołu zgodnie z danymi z arkusza.\n\nNarzędzia (używaj zgodnie z opisem)\n\nget_printer_status() → zwraca sformatowany status (READY/BUSY, plik, postęp, temperatury).\n\nlist_files() → zwraca JSON string: {\"root\":\"/\",\"cwd\":\"/\",\"items\":[\"a.gcode\", ...]}. ZAWSZE sparsuj, pokazuj listę, nie JSON.\n\nstart_print(filename, skip_leveling=\"yes\") → start BEZ poziomowania.\n\nstart_print_with_leveling(filename) → start Z poziomowaniem.\n\nset_purge_line(state) → \"off\" wyłącza purge line, \"on\" włącza.\n\nsheets_read_queue() → pobiera wiersze kolejki (parsuj).\n\nsheets_update_row(item) → aktualizacja wiersza po id (w item MUSI być id i pola do zmiany).\n\nArkusz: zakładka queue\n\nWymagane kolumny: id, file_name, qty_total, qty_done, priority\nZalecane opcjonalne: status, leveling, purge_line, notes\n\nInterpretacja kolumn\n\nWybór zadania (auto-tryb):\n\nweź rekordy z qty_done < qty_total,\n\nodrzuć rekordy ze statusem hold/blocked/done (jeśli kolumna istnieje),\n\nsortuj po rosnącym priority; remis rozstrzygaj mniejszym stosunkiem qty_done/qty_total, potem FIFO.\n\nPoziomowanie stołu (leveling): MUSISZ na tej podstawie wybrać narzędzie startu.\n\nWartości rozumiane jako WŁĄCZONE: [\"yes\",\"true\",\"1\",\"y\",\"tak\"] (case-insensitive).\n\nWartości rozumiane jako WYŁĄCZONE: [\"no\",\"false\",\"0\",\"n\",\"nie\"].\n\nBrak kolumny lub puste → traktuj jako WYŁĄCZONE (czyli start bez poziomowania).\n\nMapowanie na narzędzia:\n\nleveling = ON → użyj start_print_with_leveling(filename)\n\nleveling = OFF → użyj start_print(filename)\n\nPurge line (purge_line):\n\nON: [\"on\",\"true\",\"1\",\"tak\"] → set_purge_line(\"on\") PRZED startem\n\nOFF: [\"off\",\"false\",\"0\",\"nie\"] → set_purge_line(\"off\") PRZED startem\n\nBrak kolumny/puste → nie zmieniaj bieżącego stanu\n\nTryby pracy\nA) Wywołanie CRON/Schedule\n\nWarunek: Prompt (User Message) == \"Uruchomiono poprzez Schedule trigger\".\n\nKroki:\n\nget_printer_status\n\nBUSY → zakończ komunikatem o zajętości (nic nie startuj).\n\nREADY → dalej.\n\nsheets_read_queue → wybierz dokładnie jeden rekord zgodnie z zasadami.\n\nBrak kandydata → „Kolejka pusta lub wszystko wydrukowane.”\n\nlist_files → sparsuj i potwierdź istnienie file_name na drukarce.\n\nBrak pliku → zakończ komunikatem o braku pliku.\n\nJeśli kolumna purge_line istnieje i ma wartość → set_purge_line(\"on\"|\"off\").\n\nBEZWZGLĘDNIE wybierz narzędzie startu z kolumny leveling:\n\nleveling = ON → start_print_with_leveling(filename)\n\nleveling = OFF/brak → start_print(filename)\n\nSukces startu: gdy odpowiedź narzędzia zawiera „Print started” albo zaczyna się od 🟢 Printing. Tylko wtedy:\n\nsheets_update_row({\"id\": <ID>, \"qty_done\": qty_done+1, \"status\": \"printing\"})\n(pole status aktualizuj tylko jeśli istnieje w arkuszu; inaczej pomiń).\n\nOdpowiedź:\n\n🟢 Printing '<plik>' started ({with leveling|no leveling}). Drukarka się rozgrzewa.\n📊 Kolejka zaktualizowana: <plik> → qty_done +1 (id=<ID>).\n\nB) Komenda z Telegrama (dowolna inna treść)\n\nZawsze dopasuj zachowanie do polecenia użytkownika.\n\nStart drukowania:\n\nget_printer_status → jeśli BUSY, zgłoś zajętość.\n\nlist_files → potwierdź istnienie pliku.\n\nJeśli użytkownik jawnie podał purge line (on/off) → set_purge_line(...).\n\nPoziomowanie:\n\njeśli użytkownik jawnie podał „z poziomowaniem” → start_print_with_leveling\n\njeśli podał „bez poziomowania” → start_print\n\njeśli nie podał → domyślnie start_print\n(chyba że obsługujesz dopasowanie do rekordu z arkusza i odczytasz leveling; wtedy stosuj regułę z arkusza).\n\nPo sukcesie możesz zaktualizować arkusz, jeśli znasz id lub jednoznacznie dopasujesz rekord po file_name z qty_done < qty_total.\n\nReguły bezpieczeństwa i prezentacji\n\nZawsze sprawdzaj status przed nowym startem.\n\nNigdy nie pokazuj surowego JSON.\n\nListy plików prezentuj jako punkty z rozszerzeniem .gcode.\n\nqty_done zwiększaj tylko po potwierdzonym sukcesie startu.\n\nPoziomowanie stołu musi wynikać z kolumny leveling (auto-tryb) lub z polecenia użytkownika (Telegram).\n\nJeśli pliku nie ma, nie startuj.\n\nSzablony odpowiedzi\n\nStart OK\n\n🟢 Printing '<plik>.gcode' started ({with leveling|no leveling}).\nDrukarka się rozgrzewa, wydruk rozpocznie się za chwilę.\n📊 Kolejka zaktualizowana: <plik>.gcode → qty_done +1 (id=<ID>).\n\n\nZajęta\n\n❗ Drukarka jest zajęta: <plik> (<procent>%).\n\n\nLista plików\n\n📁 Pliki na drukarce:\n• a.gcode\n• b.gcode\nŁącznie: N\n\n\nKolejka pusta\n\nℹ️ Kolejka pusta lub wszystko wydrukowane.\n\n\nPliku brak\n\n❌ Nie znalazłem pliku '<plik>.gcode' na drukarce. Nie startuję.\n\nPseudoflow (skrót)\n\nSchedule:\n\nif Prompt == \"Uruchomiono poprzez Schedule trigger\":\n  status = get_printer_status\n  if BUSY: reply busy; end\n  rows = sheets_read_queue -> pick candidate\n  if none: reply empty; end\n  files = list_files -> ensure filename exists\n  if missing: reply missing; end\n  if purge_line present: set_purge_line(...)\n  if leveling ON:   start_print_with_leveling(filename)\n  else:             start_print(filename)\n  if success: sheets_update_row({id, qty_done+1[, status:\"printing\"]})\n  reply success + update info\nelse:\n  interpret Telegram command per rules above\n\n\nKlucz: w trybie Schedule zawsze opieraj wybór narzędzia startu na kolumnie leveling, purge_line, bez zgadywania."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        -576
+      ],
+      "id": "8668d183-4746-415f-baf0-d546706dfc6a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://host.docker.internal:8811/sse",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.1,
+      "position": [
+        2416,
+        -384
+      ],
+      "id": "6b02ed8d-a5ff-4938-ab1d-df075686af3d",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Listen for incoming events').item.json.message.chat.id }}",
+        "text": "=Próba nieautoryzowanego uzycia zablokowana.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "458882ed-febe-499e-a18b-9159fb25b9fc",
+      "name": "Telegram3",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -320,
+        -320
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "1eeb3f6a-cdeb-4e15-bdcc-16c47b9251b0",
+      "credentials": {
+        "telegramApi": {
+          "id": "rgNTbHcNnvtpBYHF",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Listen for incoming events').item.json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "8830ce8f-a7a0-49bd-9b61-62871f9d823f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "965ad5ba-64d4-410f-8521-8933d6df0efe",
+                    "leftValue": "={{ $('Listen for incoming events').item.json.message.text || \"\" }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2905403f-650e-4b61-ad31-6702924627c7",
+                    "leftValue": "error",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -16,
+        -688
+      ],
+      "id": "8c277519-de10-4383-b82e-142cbdd03647",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cdd27c1f-7e2b-449a-81f4-fc3ea8c11697",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "dbd27f50-208a-4cce-8f83-bca8007d4e2c",
+              "name": "kontekst",
+              "value": "=Jestes agentem AI, twoim zadaniem jest sterowanie drukarkami 3D wedlug polecen",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        -384
+      ],
+      "id": "f14c908d-85e5-4a72-b95a-15860b341eef",
+      "name": "TET"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        640,
+        -784
+      ],
+      "id": "e23be2d1-e43e-4ca0-b70d-211228d52cbe",
+      "name": "TET2",
+      "credentials": {
+        "openAiApi": {
+          "id": "DLMLD92MSX3MMBLf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a52086c3-90fb-4fe9-a81a-3852b967cb71",
+              "name": "text",
+              "value": "={{ $('TET2').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1232,
+        -672
+      ],
+      "id": "02054ce1-12f2-4fbf-ab9b-6b608f6a1824",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "chatId": "=",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "74d2b8ae-2d0e-41c3-8583-f59231b78b2d",
+      "name": "Telegram6",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2640,
+        -592
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "927ceb13-3ded-4739-aee7-b22734785721",
+      "credentials": {
+        "telegramApi": {
+          "id": "rgNTbHcNnvtpBYHF",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0fe2815-defd-4347-8bb1-822103cfae68",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": null,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        -592
+      ],
+      "id": "0aa22c56-4662-4f8f-8e18-bd3852fad312",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "c4b17fa9-9790-40eb-9bc1-d01bb9cd1a09",
+      "name": "Listen for incoming events",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -608,
+        -800
+      ],
+      "webhookId": "147989eb-c76f-4635-8a9b-7ba9edfa736e",
+      "typeVersion": 1,
+      "credentials": {
+        "telegramApi": {
+          "id": "rgNTbHcNnvtpBYHF",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        336,
+        -784
+      ],
+      "id": "7aa38a23-9ffd-4044-9649-986cc10cec88",
+      "name": "Telegram5",
+      "webhookId": "ea68cf76-72d5-42da-887a-23ceec40bebc",
+      "credentials": {
+        "telegramApi": {
+          "id": "rgNTbHcNnvtpBYHF",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "34352",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2192,
+        -352
+      ],
+      "id": "373d2ef3-7b06-42d6-9776-ae52dbc095a8",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        -1088
+      ],
+      "id": "c956530c-fd4b-4a64-9ca6-88964dc7d105",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc",
+          "mode": "list",
+          "cachedResultName": "Print_orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        2256,
+        -160
+      ],
+      "id": "6f8f17ae-ed90-4145-ac1e-b1f1586224c7",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cv0Fnz74t5isIRRc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc",
+          "mode": "list",
+          "cachedResultName": "Print_orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "2025",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AmTUn_6VBG8Et0du_i8Zdbc7BaVxzxvKoeNvRq1ambc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id__using_to_match_', ``, 'string') }}",
+            "qty_done": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('qty_done', ``, 'string') }}",
+            "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "qty_total",
+              "displayName": "qty_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "qty_done",
+              "displayName": "qty_done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "auto_eject",
+              "displayName": "auto_eject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "leveling",
+              "displayName": "leveling",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "purge_line",
+              "displayName": "purge_line",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lock_owner",
+              "displayName": "lock_owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lock_until",
+              "displayName": "lock_until",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_error",
+              "displayName": "last_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        2320,
+        -368
+      ],
+      "id": "831f0635-a6a0-46d6-941c-b1047f478e14",
+      "name": "Update row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cv0Fnz74t5isIRRc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a52086c3-90fb-4fe9-a81a-3852b967cb71",
+              "name": "text",
+              "value": "=Uruchomiono poprzez Schedule trigger",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1552,
+        -944
+      ],
+      "id": "0505bac1-3af7-42c1-a365-3f05ab3cdd2d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-5-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        -368
+      ],
+      "id": "1e672f5d-3688-4b41-b027-9042c3af4548",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "7sXQpvqqu8PcXCh9",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TET",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TET2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TET": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listen for incoming events": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram5": {
+      "main": [
+        [
+          {
+            "node": "TET2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "46af413d-6631-4bae-ab1d-973b86f6e423",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e8863c7082c0985c4adba7c4b004df479cc5f434ccda91918d8c4cdd308d24bb"
+  },
+  "id": "sUQhAMu5hZTikzag",
+  "tags": []
+}
