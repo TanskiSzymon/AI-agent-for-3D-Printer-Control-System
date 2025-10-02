@@ -76,25 +76,11 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 
 ---
 
-## Repository Layout
+## N8n diagram
 
-> The repo contains full code, macros and config fragments referenced below.
-```bash
-/moonraker-mcp-server/
-├─ moonraker_server.py # MCP server (Python): tools for Moonraker
-├─ requirements.txt # mcp[cli] >= 1.2.0, httpx
-└─ Dockerfile # builds mcp/moonraker:latest
-
-~/.docker/mcp/
-├─ registry.yaml # MCP gateway registry
-├─ catalogs/
-│ ├─ docker-mcp.yaml # base catalog (incl. 'moonraker' server entry)
-│ └─ custom.yaml # your overrides/extensions
-├─ config.yaml
-├─ tools.yaml
-└─ secrets.yaml
-```
-
+<p align="center">
+  <img src="images/Diagram.png" alt="N8n_diagram" width="2539" height="861">
+</p>
 ---
 
 ## Requirements
