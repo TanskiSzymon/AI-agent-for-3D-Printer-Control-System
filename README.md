@@ -116,7 +116,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 
 ### 2. MCP Server (Docker build + secrets)
 
--From the project folder:
+- From the project folder:
   ```
 cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
@@ -196,11 +196,11 @@ Reading catalog from [docker-mcp.yaml, custom.yaml]
 ```
 ### 5. N8n (CRON, Telegram, Google Sheets)
 
--Run n8n locally  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
+- Run n8n locally  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
--Add Schedule Trigger (CRON) and Telegram Trigger.
+- Add Schedule Trigger (CRON) and Telegram Trigger.
 
--Connect Google Sheets credentials and create a queue sheet.
+- Connect Google Sheets credentials and create a queue sheet.
 
 Sheet schema (example):
   ```bash
