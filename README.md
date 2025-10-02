@@ -394,9 +394,10 @@ Toolhead cover (improves ejection): [https://makerworld.com/en/models/816811-cre
 
 # Quick Start (TL;DR)
 ## Build MCP server image
+```
 cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
-
+```
 ## Set Moonraker endpoint + key
 ```
 docker mcp secret set PRINTER_URL="YOUR-PRINTER-IP:MOONRAKER_PORT"
