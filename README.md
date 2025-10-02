@@ -391,21 +391,27 @@ Cloudflare Zero Trust: https://developers.cloudflare.com/cloudflare-one/
 
 Toolhead cover (improves ejection): [https://makerworld.com/en/models/816811-creality-k1-toolhead-cover-k1-burner-v2]
 
-Quick Start (TL;DR)
-# Build MCP server image
+# Quick Start (TL;DR)
+## Build MCP server image
 cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
 
-# Set Moonraker endpoint + key
+## Set Moonraker endpoint + key
+ ```
 docker mcp secret set PRINTER_URL="YOUR-PRINTER-IP:MOONRAKER_PORT"
 docker mcp secret set API_KEY="YOUR-API-KEY"
+ ```
+## Ensure registry points to both catalogs
+ ~/.docker/mcp/registry.yaml -> catalogs/docker-mcp.yaml + catalogs/custom.yaml
 
-# Ensure registry points to both catalogs
-# ~/.docker/mcp/registry.yaml -> catalogs/docker-mcp.yaml + catalogs/custom.yaml
-
-# Run MCP gateway
+## Run MCP gateway
+ ```
 docker mcp gateway run --transport sse
-# Should log both catalogs being read
+ ```
+Should log both catalogs being read
 
-# Configure n8n (CRON + Telegram + Google Sheets 'queue')
-# Test: get_printer_status, list_files, start_print/start_print_with_leveling
+## Configure n8n (CRON + Telegram + Google Sheets 'queue')
+Test:
+- get_printer_status,
+- list_files,
+- start_print/start_print_with_leveling
