@@ -138,7 +138,7 @@ docker mcp secret set API_KEY="your-api-key"
 The server supports a single printer via PRINTER_URL/API_KEY or multiple via PRINTER_URLS, API_KEYS, PRINTER_NAMES.
 
 3. MCP Registry & Catalog
-
+ ```
 ~/.docker/mcp/registry.yaml:
 catalog:
   - catalogs/docker-mcp.yaml
@@ -147,7 +147,7 @@ config: config.yaml
 tools: tools.yaml
 secrets: secrets.yaml
 ~/.docker/mcp/catalo gs/docker-mcp.yaml (server entry):
-
+ 
 moonraker:
   description: "Control Creality K1 Max 3D printers via Moonraker API"
   title: "Moonraker Printer Control"
@@ -168,7 +168,7 @@ moonraker:
       env: PRINTER_URL
     - name: API_KEY
       env: API_KEY
-Keep your changes in custom.yaml to survive updates.
+ ```
 
 4. MCP Gateway (Claude Desktop / CLI)
   ```bash
