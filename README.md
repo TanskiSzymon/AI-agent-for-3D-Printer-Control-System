@@ -37,7 +37,7 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
   - [3. MCP Registry & Catalog](#3-mcp-registry--catalog)
   - [4. MCP Gateway (Claude Desktop / CLI)](#4-mcp-gateway-claude-desktop--cli)
   - [5. n8n (CRON, Telegram, Google Sheets)](#5-n8n-cron-telegram-google-sheets)
-  - [6. Cloudflare Zero Trust (optional)](#6-cloudflare-zero-trust-optional)
+  - [6. Cloudflare Zero Trust](#6-cloudflare-zero-trust)
   - [7. Klipper/KAMP Configuration (Purge & Auto-Eject)](#7-klipperkamp-configuration-purge--auto-eject)
 - [Klipper/KAMP Configuration (Purge & Auto-Eject)](#klipperkamp-configuration-purge--auto-eject)
 - [Usage](#usage)
@@ -114,7 +114,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
   
 >If a KAMP file is read-only, copy it under a new name and change the relevant [include ...] (e.g. swap Start_Print.cfg → Start_Print2.cfg in KAMP_Settings.cfg).
 
-2. MCP Server (Docker build + secrets)
+### 2. MCP Server (Docker build + secrets)
 
 -From the project folder:
   ```
@@ -127,7 +127,7 @@ docker mcp secret set PRINTER_URL="your-printer-IP:port"
 docker mcp secret set API_KEY="your-api-key"
   ```
 
-3. MCP Registry & Catalog
+### 3. MCP Registry & Catalog
  ```
 ~/.docker/mcp/registry.yaml:
 
@@ -162,7 +162,7 @@ moonraker:
       env: API_KEY
  ```
 
-4. MCP Gateway (Claude Desktop / CLI)
+### 4. MCP Gateway (Claude Desktop / CLI)
 
 - Claude Desktop (macOS) example (claude_desktop_config snippet):
   ```bash
@@ -194,7 +194,7 @@ On startup you should see:
 ```
 Reading catalog from [docker-mcp.yaml, custom.yaml]
 ```
-5. N8n (CRON, Telegram, Google Sheets)
+### 5. N8n (CRON, Telegram, Google Sheets)
 
 -Run n8n locally  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
@@ -218,7 +218,7 @@ Auto mode (CRON):
 - if leveling ∈ {yes,true,1,tak} then start with leveling, else without,
 - on success, increment qty_done and optionally set status=printing.
 
-6. Cloudflare Zero Trust 
+### 6. Cloudflare Zero Trust 
 
 - Publish n8n behind your domain via Cloudflare Tunnel and protect with authentication.  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
