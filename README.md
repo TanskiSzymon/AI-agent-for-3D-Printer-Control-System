@@ -13,7 +13,7 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 > - Collisions and mis-detections can happen if you ignore the above.
 
 
-# Film: Demo
+# Film
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=yE1FC6HocyQ">
@@ -28,7 +28,7 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
 - [Features](#features)
-- [Repository Layout](#repository-layout)
+- [N8n diagram](#N8n--diagram)
 - [Requirements](#requirements)
 - [Installation & Setup](#installation--setup)
   - [1. Printer (Klipper/Moonraker/KAMP)](#1-printer-klippermoonrakerkamp)
@@ -40,8 +40,6 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 - [Klipper/KAMP Configuration (Purge & Auto-Eject)](#klipperkamp-configuration-purge--autoeject)
 - [Usage](#usage)
 - [Troubleshooting](#troubleshooting)
-- [Demo Video](#demo-video)
-- [Diagrams](#diagrams)
 - [Links & Resources](#links--resources)
 - [License](#license)
 
