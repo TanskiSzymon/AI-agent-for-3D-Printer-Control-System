@@ -12,6 +12,21 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 > - Auto-eject is unreliable for very low-height parts and requires **~80 mm** free space at the **rear** of the build plate.
 > - Collisions and mis-detections can happen if you ignore the above.
 
+
+### Oto film:
+
+<iframe
+  width="100%"
+  height="500"
+  src="https://www.youtube.com/embed/yE1FC6HocyQ"
+  title="YouTube video"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen>
+</iframe>
+
+
+
 ---
 
 ## Table of Contents
