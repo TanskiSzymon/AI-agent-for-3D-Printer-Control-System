@@ -25,10 +25,11 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 
 ## Table of Contents
 
+- [Film](#film)
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
 - [Features](#features)
-- [N8n diagram](#N8n--diagram)
+- [N8n diagram](#n8n-diagram)
 - [Requirements](#requirements)
 - [Installation & Setup](#installation--setup)
   - [1. Printer (Klipper/Moonraker/KAMP)](#1-printer-klippermoonrakerkamp)
@@ -37,12 +38,14 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
   - [4. MCP Gateway (Claude Desktop / CLI)](#4-mcp-gateway-claude-desktop--cli)
   - [5. n8n (CRON, Telegram, Google Sheets)](#5-n8n-cron-telegram-google-sheets)
   - [6. Cloudflare Zero Trust (optional)](#6-cloudflare-zero-trust-optional)
-- [Klipper/KAMP Configuration (Purge & Auto-Eject)](#klipperkamp-configuration-purge--autoeject)
+  - [7. Klipper/KAMP Configuration (Purge & Auto-Eject)](#7-klipperkamp-configuration-purge--auto-eject)
+- [Klipper/KAMP Configuration (Purge & Auto-Eject)](#klipperkamp-configuration-purge--auto-eject)
 - [Usage](#usage)
 - [Troubleshooting](#troubleshooting)
 - [Links & Resources](#links--resources)
+- [Quick Start (TL;DR)](#quick-start-tldr)
 - [License](#license)
-
+  
 ---
 
 ## Overview
