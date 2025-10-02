@@ -163,7 +163,7 @@ moonraker:
 
 4. MCP Gateway (Claude Desktop / CLI)
 
--Claude Desktop (macOS) example (claude_desktop_config snippet):
+- Claude Desktop (macOS) example (claude_desktop_config snippet):
   ```bash
 {
   "mcpServers": {
@@ -193,7 +193,7 @@ On startup you should see:
 ```
 Reading catalog from [docker-mcp.yaml, custom.yaml]
 ```
-5. n8n (CRON, Telegram, Google Sheets)
+5. N8n (CRON, Telegram, Google Sheets)
 
 -Run n8n locally  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
@@ -208,14 +208,14 @@ id	file_name	qty_total	qty_done	priority	status	auto_eject	leveling	purge_line	n
 2	0003.gcode	6	6	1	DONE	on	off	on	—
   ```
 
--Auto mode (CRON):
->choose rows with qty_done < qty_total,
->skip rows with status ∈ {hold, blocked, done},
->sort by priority, then qty_done/qty_total, then FIFO,
->check file exists on printer,
->set purge line if the column exists,
->if leveling ∈ {yes,true,1,tak} then start with leveling, else without,
->on success, increment qty_done and optionally set status=printing.
+Auto mode (CRON):
+- choose rows with qty_done < qty_total,
+- skip rows with status ∈ {hold, blocked, done},
+- sort by priority, then qty_done/qty_total, then FIFO,
+- check file exists on printer,
+- set purge line if the column exists,
+- if leveling ∈ {yes,true,1,tak} then start with leveling, else without,
+- on success, increment qty_done and optionally set status=printing.
 
 6. Cloudflare Zero Trust 
 
@@ -345,7 +345,7 @@ gcode:
  ```
 If you cannot edit Line_Purge.cfg directly, copy to a new file and update the [include ...] in your KAMP settings.
 
-#Usage
+# Usage
 
 Auto (CRON via n8n):
 
@@ -363,7 +363,7 @@ Manual (Telegram):
 - pause, resume, stop
 - light on, light off
 
-Troubleshooting
+# Troubleshooting
 
 - custom.yaml not loaded → ensure registry.yaml lists both catalogs (docker-mcp.yaml, then custom.yaml) and gateway logs show both.
 
@@ -376,7 +376,7 @@ Troubleshooting
 - Fan via SET_PIN → define output_pin fan0 with pwm: True, scale: 255 or use M106/M107.
 
 
-Links & Resources
+# Links & Resources
 
 Moonraker: https://moonraker.readthedocs.io/
 
