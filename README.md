@@ -13,7 +13,7 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 > - Collisions and mis-detections can happen if you ignore the above.
 
 
-# Film
+# Video
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=yE1FC6HocyQ">
@@ -165,7 +165,7 @@ moonraker:
 ### 4. MCP Gateway (Claude Desktop / CLI)
 
 - Claude Desktop (macOS) example (claude_desktop_config snippet):
-  ```bash
+```bash
 {
   "mcpServers": {
     "mcp-toolkit-gateway": {
