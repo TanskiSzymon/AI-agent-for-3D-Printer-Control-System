@@ -15,36 +15,11 @@ Semi-automated printing pipeline for **Creality K1 Max** built around:
 
 # Film: Demo
 
-Krótki opis projektu lub filmu.
-
-<!--
-  Metoda 1: pełne osadzenie przez HTML iframe.
-  Działa w GitHub Pages i wielu przeglądarkowych viewerach Markdown.
-  Jeśli chcesz maksymalny rozmiar, zmień max-width/height.
--->
-<div style="max-width:1200px;margin:0 auto;">
-  <iframe
-    src="https://www.youtube.com/embed/yE1FC6HocyQ"
-    title="YouTube video player"
-    style="width:100%;height:720px;border:0;"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowfullscreen>
-  </iframe>
-</div>
-
----
-
-## Fallback dla GitHub README (renderowane bez iframe)
-Jeżeli README na GitHubie nie pokazuje iframe, użyj miniatury linkującej do filmu.
-
 <p align="center">
-[![Obejrzyj na YouTube](https://img.youtube.com/vi/yE1FC6HocyQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=yE1FC6HocyQ)
+  <a href="https://www.youtube.com/watch?v=yE1FC6HocyQ">
+     <img src="https://img.youtube.com/vi/yE1FC6HocyQ/0.jpg" alt="Demo video">
+  </a>
 </p>
-
-> Uwaga: GitHub.com często blokuje osadzanie `<iframe>` w plikach README. Pełne osadzenie działa poprawnie na GitHub Pages lub w czytnikach Markdown, które akceptują HTML.
-
-
 
 ---
 
