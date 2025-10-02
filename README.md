@@ -57,6 +57,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ---
 
 ## System Architecture
+  ```
 [Klipper + Moonraker (K1 Max)]
 ↑ REST (Moonraker API)
 [Moonraker MCP Server (Docker)]
@@ -64,7 +65,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 [MCP Gateway] ←→ [n8n Orchestration] ←→ [Google Sheets Queue]
 ↑
 (Telegram / Schedule Trigger)
-
+  ```
 
 ---
 
@@ -114,24 +115,28 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 
 2. MCP Server (Docker build + secrets)
 
-From the project folder:
+-From the project folder:
+  ```
 cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
+```
 Set Moonraker endpoint and key:
-docker mcp secret set PRINTER_URL="http://192.168.1.12:4409"
+  ```
+docker mcp secret set PRINTER_URL="your-printer-IP:port" 
 docker mcp secret set API_KEY="your-api-key"
-
-The server supports a single printer via PRINTER_URL/API_KEY or multiple via PRINTER_URLS, API_KEYS, PRINTER_NAMES.
+  ```
 
 3. MCP Registry & Catalog
  ```
 ~/.docker/mcp/registry.yaml:
+
 catalog:
   - catalogs/docker-mcp.yaml
   - catalogs/custom.yaml
 config: config.yaml
 tools: tools.yaml
 secrets: secrets.yaml
+
 ~/.docker/mcp/catalo gs/docker-mcp.yaml (server entry):
  
 moonraker:
@@ -157,8 +162,9 @@ moonraker:
  ```
 
 4. MCP Gateway (Claude Desktop / CLI)
+
+-Claude Desktop (macOS) example (claude_desktop_config snippet):
   ```bash
-Claude Desktop (macOS) example (claude_desktop_config snippet):
 {
   "mcpServers": {
     "mcp-toolkit-gateway": {
@@ -166,7 +172,7 @@ Claude Desktop (macOS) example (claude_desktop_config snippet):
       "args": [
         "run","-i","--rm",
         "-v","/var/run/docker.sock:/var/run/docker.sock",
-        "-v","/Users/youruser/.docker/mcp:/mcp",
+        "-v","/Users/[your-user-name]/.docker/mcp:/mcp",
         "docker/mcp-gateway",
         "--catalog=/mcp/catalogs/docker-mcp.yaml",
         "--catalog=/mcp/catalogs/custom.yaml",
@@ -182,16 +188,18 @@ Claude Desktop (macOS) example (claude_desktop_config snippet):
 CLI alternative:
   ```bash
 docker mcp gateway run --transport sse
+```
 On startup you should see:
+```
 Reading catalog from [docker-mcp.yaml, custom.yaml]
-  ```
+```
 5. n8n (CRON, Telegram, Google Sheets)
 
-Run n8n locally.
+-Run n8n locally  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
-Add Schedule Trigger (CRON) and Telegram Trigger.
+-Add Schedule Trigger (CRON) and Telegram Trigger.
 
-Connect Google Sheets credentials and create a queue sheet.
+-Connect Google Sheets credentials and create a queue sheet.
 
 Sheet schema (example):
   ```bash
@@ -199,37 +207,32 @@ id	file_name	qty_total	qty_done	priority	status	auto_eject	leveling	purge_line	n
 1	0004.gcode	3	2	1	waiting	on	off	on	client #123
 2	0003.gcode	6	6	1	DONE	on	off	on	—
   ```
-Auto mode (CRON):
 
-choose rows with qty_done < qty_total,
+-Auto mode (CRON):
+>choose rows with qty_done < qty_total,
+>skip rows with status ∈ {hold, blocked, done},
+>sort by priority, then qty_done/qty_total, then FIFO,
+>check file exists on printer,
+>set purge line if the column exists,
+>if leveling ∈ {yes,true,1,tak} then start with leveling, else without,
+>on success, increment qty_done and optionally set status=printing.
 
-skip rows with status ∈ {hold, blocked, done},
+6. Cloudflare Zero Trust 
 
-sort by priority, then qty_done/qty_total, then FIFO,
+- Publish n8n behind your domain via Cloudflare Tunnel and protect with authentication.  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
-check file exists on printer,
+7. Klipper/KAMP Configuration (Purge & Auto-Eject)
 
-set purge line if the column exists,
-
-if leveling ∈ {yes,true,1,tak} then start with leveling, else without,
-
-on success, increment qty_done and optionally set status=printing.
-
-6. Cloudflare Zero Trust (optional)
-
-Publish n8n behind your domain via Cloudflare Tunnel and protect with authentication.
-
-Klipper/KAMP Configuration (Purge & Auto-Eject)
-
-These snippets are included in the repo. If your KAMP files are read-only, copy and update the corresponding [include ...].
+- These snippets are included in the repo. If your KAMP files are read-only, copy and update the corresponding [include ...].
 
 A) Post-print auto-eject (sweep)
 
 gcode_macros.cfg:
+ ```gcode
 [gcode_macro POST_PRINT_EJECT_SIMPLE_RUN]
 description: Fixed sweep path – no object logic
 variable_bed_cooldown: 39   # °C threshold
-  ```gcode
+ 
 gcode:
   TEMPERATURE_WAIT SENSOR=heater_bed MAXIMUM={bed_cooldown}
   G90
@@ -312,10 +315,11 @@ gcode:
 [gcode_macro AUTOEJECT_OFF]
 gcode:
   SET_PIN PIN=AUTO_EJECT VALUE=0
-
+ ```
 B) Alternative purge (custom LINEPURGE)
 
 Example macro (simplified excerpt):
+ ```gcode
 [gcode_macro LINEPURGE]
 description: Simple nozzle purge sequence
 # positions / speeds
@@ -338,55 +342,39 @@ gcode:
   M83
   G0 X{ x1 } Y{ y1 } Z{ z1 } F{ f1 }
   ; heat, wait, extrude, cool with fan, finish moves...
-If you cannot edit Line_Purge.cfg directly, copy to a new file and update the [include ...] in your KAMP settings.
  ```
-Usage
+If you cannot edit Line_Purge.cfg directly, copy to a new file and update the [include ...] in your KAMP settings.
+
+#Usage
 
 Auto (CRON via n8n):
 
-get_printer_status → skip if BUSY.
-
-Read queue from Google Sheets; pick next job by rules.
-
-list_files → ensure file exists on printer.
-
-If purge_line present → set_purge_line(on/off).
-
-If leveling is ON → start_print_with_leveling(file) else start_print(file).
-
-On success → increment qty_done (and optionally set status=printing).
+- get_printer_status → skip if BUSY.
+- Read queue from Google Sheets; pick next job by rules.
+- list_files → ensure file exists on printer.
+- If purge_line present → set_purge_line(on/off).
+- If leveling is ON → start_print_with_leveling(file) else start_print(file).
+- On success → increment qty_done (and optionally set status=printing).
 
 Manual (Telegram):
 
-status, files
-
-print <file>, print leveling <file>
-
-pause, resume, stop
-
-light on, light off
+- status, files
+- print <file>, print leveling <file>
+- pause, resume, stop
+- light on, light off
 
 Troubleshooting
 
-custom.yaml not loaded → ensure registry.yaml lists both catalogs (docker-mcp.yaml, then custom.yaml) and gateway logs show both.
+- custom.yaml not loaded → ensure registry.yaml lists both catalogs (docker-mcp.yaml, then custom.yaml) and gateway logs show both.
 
-File missing → verify with list_files() and correct the sheet filename.
+- File missing → verify with list_files() and correct the sheet filename.
 
-TEMPERATURE_WAIT error → use MINIMUM/MAXIMUM (not TARGET).
+- TEMPERATURE_WAIT error → use MINIMUM/MAXIMUM (not TARGET).
 
-Auto-eject collisions → disable with AUTOEJECT_OFF and tune path.
+- Auto-eject collisions → disable with AUTOEJECT_OFF and tune path.
 
-Fan via SET_PIN → define output_pin fan0 with pwm: True, scale: 255 or use M106/M107.
+- Fan via SET_PIN → define output_pin fan0 with pwm: True, scale: 255 or use M106/M107.
 
-Demo Video
-
-YouTube walkthrough: [PLACEHOLDER – link will be added here]
-
-Diagrams
-
-System architecture: [PLACEHOLDER – image/diagram link]
-
-n8n workflow: [PLACEHOLDER – image/screenshot link]
 
 Links & Resources
 
@@ -400,11 +388,7 @@ n8n: https://docs.n8n.io/
 
 Cloudflare Zero Trust: https://developers.cloudflare.com/cloudflare-one/
 
-Toolhead cover (improves ejection): https://makerworld.com/en/models/816811-creality-k1-toolhead-cover-k1-burner-v2
-
-License
-
-MIT License (unless stated otherwise in individual files). External components remain under their respective licenses.
+Toolhead cover (improves ejection): [https://makerworld.com/en/models/816811-creality-k1-toolhead-cover-k1-burner-v2]
 
 Quick Start (TL;DR)
 # Build MCP server image
@@ -412,7 +396,7 @@ cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
 
 # Set Moonraker endpoint + key
-docker mcp secret set PRINTER_URL="http://192.168.1.12:4409"
+docker mcp secret set PRINTER_URL="YOUR-PRINTER-IP:MOONRAKER_PORT"
 docker mcp secret set API_KEY="YOUR-API-KEY"
 
 # Ensure registry points to both catalogs
