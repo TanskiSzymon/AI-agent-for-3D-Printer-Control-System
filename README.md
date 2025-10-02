@@ -222,7 +222,7 @@ Auto mode (CRON):
 
 - Publish n8n behind your domain via Cloudflare Tunnel and protect with authentication.  [https://www.youtube.com/watch?v=-ErfsM2TYsM]
 
-7. Klipper/KAMP Configuration (Purge & Auto-Eject)
+### 7. Klipper/KAMP Configuration (Purge & Auto-Eject)
 
 - These snippets are included in the repo. If your KAMP files are read-only, copy and update the corresponding [include ...].
 
