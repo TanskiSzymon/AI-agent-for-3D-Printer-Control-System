@@ -81,6 +81,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 <p align="center">
   <img src="images/Diagram.png" alt="N8n_diagram" width="2539" height="861">
 </p>
+
 ---
 
 ## Requirements
