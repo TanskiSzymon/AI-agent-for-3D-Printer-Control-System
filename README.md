@@ -79,7 +79,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ## Repository Layout
 
 > The repo contains full code, macros and config fragments referenced below.
-
+```bash
 /moonraker-mcp-server/
 ├─ moonraker_server.py # MCP server (Python): tools for Moonraker
 ├─ requirements.txt # mcp[cli] >= 1.2.0, httpx
@@ -93,7 +93,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ├─ config.yaml
 ├─ tools.yaml
 └─ secrets.yaml
-
+```
 
 ---
 
@@ -171,7 +171,7 @@ moonraker:
 Keep your changes in custom.yaml to survive updates.
 
 4. MCP Gateway (Claude Desktop / CLI)
-
+  ```bash
 Claude Desktop (macOS) example (claude_desktop_config snippet):
 {
   "mcpServers": {
@@ -192,11 +192,13 @@ Claude Desktop (macOS) example (claude_desktop_config snippet):
     }
   }
 }
+  ```
 CLI alternative:
+  ```bash
 docker mcp gateway run --transport sse
 On startup you should see:
 Reading catalog from [docker-mcp.yaml, custom.yaml]
-
+  ```
 5. n8n (CRON, Telegram, Google Sheets)
 
 Run n8n locally.
@@ -206,11 +208,11 @@ Add Schedule Trigger (CRON) and Telegram Trigger.
 Connect Google Sheets credentials and create a queue sheet.
 
 Sheet schema (example):
-
+  ```bash
 id	file_name	qty_total	qty_done	priority	status	auto_eject	leveling	purge_line	notes
 1	0004.gcode	3	2	1	waiting	on	off	on	client #123
 2	0003.gcode	6	6	1	DONE	on	off	on	—
-
+  ```
 Auto mode (CRON):
 
 choose rows with qty_done < qty_total,
@@ -241,6 +243,7 @@ gcode_macros.cfg:
 [gcode_macro POST_PRINT_EJECT_SIMPLE_RUN]
 description: Fixed sweep path – no object logic
 variable_bed_cooldown: 39   # °C threshold
+  ```gcode
 gcode:
   TEMPERATURE_WAIT SENSOR=heater_bed MAXIMUM={bed_cooldown}
   G90
@@ -350,7 +353,7 @@ gcode:
   G0 X{ x1 } Y{ y1 } Z{ z1 } F{ f1 }
   ; heat, wait, extrude, cool with fan, finish moves...
 If you cannot edit Line_Purge.cfg directly, copy to a new file and update the [include ...] in your KAMP settings.
-
+ ```
 Usage
 
 Auto (CRON via n8n):
