@@ -109,7 +109,8 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 - Install KAMP.
 
 - Add/adjust macros as in Klipper/KAMP Configuration
-. If a KAMP file is read-only, copy it under a new name and change the relevant [include ...] (e.g. swap Start_Print.cfg → Start_Print2.cfg in KAMP_Settings.cfg).
+  
+>If a KAMP file is read-only, copy it under a new name and change the relevant [include ...] (e.g. swap Start_Print.cfg → Start_Print2.cfg in KAMP_Settings.cfg).
 
 2. MCP Server (Docker build + secrets)
 
