@@ -58,7 +58,7 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ---
 
 ## System Architecture
-  ```
+```
 [Klipper + Moonraker (K1 Max)]
 ↑ REST (Moonraker API)
 [Moonraker MCP Server (Docker)]
@@ -103,11 +103,12 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ### 1. Printer (Klipper/Moonraker/KAMP)
 
 - Ensure Moonraker/REST is reachable:
-  ```bash
+```
   curl "http://PRINTER_IP:PORT/server/files/list"
   curl -X POST "http://PRINTER_IP:PORT/printer/gcode/script" \
     -H "Content-Type: application/json" \
     -d '{"script":"G28"}'
+```
 - Install KAMP.
 
 - Add/adjust macros as in Klipper/KAMP Configuration
@@ -117,18 +118,18 @@ This project links a K1 Max (Klipper/Moonraker) to an orchestration layer:
 ### 2. MCP Server (Docker build + secrets)
 
 - From the project folder:
-  ```
+```
 cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
 ```
 Set Moonraker endpoint and key:
-  ```
+```
 docker mcp secret set PRINTER_URL="your-printer-IP:port" 
 docker mcp secret set API_KEY="your-api-key"
-  ```
+```
 
 ### 3. MCP Registry & Catalog
- ```
+```
 ~/.docker/mcp/registry.yaml:
 
 catalog:
@@ -160,12 +161,12 @@ moonraker:
       env: PRINTER_URL
     - name: API_KEY
       env: API_KEY
- ```
+```
 
 ### 4. MCP Gateway (Claude Desktop / CLI)
 
 - Claude Desktop (macOS) example (claude_desktop_config snippet):
-```bash
+```
 {
   "mcpServers": {
     "mcp-toolkit-gateway": {
@@ -185,9 +186,9 @@ moonraker:
     }
   }
 }
-  ```
+```
 CLI alternative:
-  ```bash
+```bash
 docker mcp gateway run --transport sse
 ```
 On startup you should see:
@@ -203,11 +204,11 @@ Reading catalog from [docker-mcp.yaml, custom.yaml]
 - Connect Google Sheets credentials and create a queue sheet.
 
 Sheet schema (example):
-  ```bash
+```
 id	file_name	qty_total	qty_done	priority	status	auto_eject	leveling	purge_line	notes
 1	0004.gcode	3	2	1	waiting	on	off	on	client #123
 2	0003.gcode	6	6	1	DONE	on	off	on	—
-  ```
+```
 
 Auto mode (CRON):
 - choose rows with qty_done < qty_total,
@@ -229,7 +230,7 @@ Auto mode (CRON):
 A) Post-print auto-eject (sweep)
 
 gcode_macros.cfg:
- ```gcode
+```
 [gcode_macro POST_PRINT_EJECT_SIMPLE_RUN]
 description: Fixed sweep path – no object logic
 variable_bed_cooldown: 39   # °C threshold
@@ -316,11 +317,11 @@ gcode:
 [gcode_macro AUTOEJECT_OFF]
 gcode:
   SET_PIN PIN=AUTO_EJECT VALUE=0
- ```
+```
 B) Alternative purge (custom LINEPURGE)
 
 Example macro (simplified excerpt):
- ```gcode
+```
 [gcode_macro LINEPURGE]
 description: Simple nozzle purge sequence
 # positions / speeds
@@ -343,7 +344,7 @@ gcode:
   M83
   G0 X{ x1 } Y{ y1 } Z{ z1 } F{ f1 }
   ; heat, wait, extrude, cool with fan, finish moves...
- ```
+```
 If you cannot edit Line_Purge.cfg directly, copy to a new file and update the [include ...] in your KAMP settings.
 
 # Usage
@@ -397,17 +398,17 @@ cd /Users/youruser/moonraker-mcp-server
 docker build -t mcp/moonraker:latest .
 
 ## Set Moonraker endpoint + key
- ```
+```
 docker mcp secret set PRINTER_URL="YOUR-PRINTER-IP:MOONRAKER_PORT"
 docker mcp secret set API_KEY="YOUR-API-KEY"
- ```
+```
 ## Ensure registry points to both catalogs
  ~/.docker/mcp/registry.yaml -> catalogs/docker-mcp.yaml + catalogs/custom.yaml
 
 ## Run MCP gateway
- ```
+```
 docker mcp gateway run --transport sse
- ```
+```
 Should log both catalogs being read
 
 ## Configure n8n (CRON + Telegram + Google Sheets 'queue')
